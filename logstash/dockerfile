@@ -1,0 +1,28 @@
+# installation a partir de l'image de logstash
+
+FROM logstash:7.14.2
+
+USER root
+
+# message de bienvenue
+
+RUN echo "Bienvenue dans l'outil de création de limage LAP" \
+&& echo "powered by" \
+&& echo "__/\\\________/\\\________/\\\\\\\\\_        " \
+&& echo " _\/\\\_______\/\\\_____/\\\////////__       " \
+&& echo "  _\/\\\_______\/\\\___/\\\/___________      " \
+&& echo "   _\/\\\\\\\\\\\\\\\__/\\\_____________     " \
+&& echo "    _\/\\\/////////\\\_\/\\\_____________    " \
+&& echo "     _\/\\\_______\/\\\_\//\\\____________   " \
+&& echo "      _\/\\\_______\/\\\__\///\\\__________  " \
+&& echo "       _\/\\\_______\/\\\____\////\\\\\\\\\_ " \
+&& echo "        _\///________\///________\/////////__" \
+&& sleep 5
+
+RUN rm -f /usr/share/logstash/pipeline/logstash.conf
+
+ADD pipeline/ /usr/share/logstash/pipeline/
+ADD config/ /usr/share/logstash/config/
+
+EXPOSE 5044
+EXPOSE 9600

@@ -1,0 +1,98 @@
+version: '3'
+
+volumes:
+  esdata1:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '/drive1/elastic'
+  
+  shared-tmpfs:
+    driver: local
+    driver_opts:
+      type: "tmpfs"
+      device: "/drive1/dockertmpfs"
+      o: "size=1g,uid=1000"
+
+networks:
+    elasticgalax:
+        ipam:
+            driver: default
+            config:
+                 - subnet: 11.5.0.0/24
+
+
+services:
+
+  elasticsearch:
+      image: elasticsearch:7.14.2
+      container_name: carburant_elasticsearch
+      environment:
+      - "discovery.type=single-node"
+      restart: always
+      expose:
+        - 9300
+        - 9200
+      ulimits:
+        memlock:
+          soft: -1
+          hard: -1
+      volumes:
+       - 'esdata1:/usr/share/elasticsearch/data'
+      ports:
+        - "9300:9300"
+        - "9200:9200"
+      networks:
+        elasticgalax:
+          ipv4_address: 11.5.0.6
+
+  kibana:
+    image: kibana:7.14.2
+    container_name: carburant_kibana
+    environment:
+        - elasticsearch_url=http://11.5.0.6:9200
+        - elasticsearch_hosts=http://11.5.0.6:9200
+    restart: always 
+    expose:
+      - 5601
+    ports:
+      - "5601:5601"
+    networks:
+        elasticgalax:
+          ipv4_address: 11.5.0.7
+    depends_on:
+      - elasticsearch
+
+  logstash:
+    container_name: carburant_logstash
+    restart: always 
+    expose:
+      - 9600
+      - 5044
+    ports:
+      - "9600:9600"
+      - "5044:5044"
+    networks:
+        elasticgalax:
+          ipv4_address: 11.5.0.8
+    build:
+       context: ./logstash
+       dockerfile: dockerfile
+    depends_on:
+      - elasticsearch
+    volumes:
+      - shared-tmpfs:/tmp/mytmpfs
+
+  requester:
+    container_name: carburant_requester
+    networks:
+        elasticgalax:
+          ipv4_address: 11.5.0.3
+    build:
+       context: ./request
+       dockerfile: dockerfile
+    depends_on:
+      - logstash
+    volumes:
+      - shared-tmpfs:/tmp/mytmpfs
